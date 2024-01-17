@@ -60,8 +60,6 @@ jQuery(document).ready(($) => {
         formObject.on( "submit", (e) => {
             let requestData = {}
 
-            console.log(e.target)
-
             try {
                 requestData = {
                     'name': e.target.name.value,
@@ -82,12 +80,10 @@ jQuery(document).ready(($) => {
             // build JSONP request url
             const apiUrl = `${apiEndpoint}/${integration.integration}?${new URLSearchParams(requestData)}`;
 
-            console.log(requestData)
-
             // create script and append it to body = make JSONP request
-            // const script = document.createElement('script');
-            // script.src = apiUrl;
-            // document.body.appendChild(script);
+            const script = document.createElement('script');
+            script.src = apiUrl;
+            document.body.appendChild(script);
 
             e.preventDefault();
             return false;
