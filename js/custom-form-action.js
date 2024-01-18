@@ -1,5 +1,6 @@
 jQuery(document).ready(($) => {
     const formTable = JSON.parse(customFormActionParams.formTable);
+    const formNames = JSON.parse(customFormActionParams.formNames);
     const integrations = JSON.parse(customFormActionParams.integrations);
     const apiEndpoint = customFormActionParams.apiEndpoint;
 
@@ -16,6 +17,7 @@ jQuery(document).ready(($) => {
             '<td><input type="text" name="custom_form_action_form_table[' + newId + '][branch]" value="" /></td>' +
             '<td><input class="monospace" spellcheck="false" type="text" name="custom_form_action_form_table[' + newId + '][callback]" value="" /></td>' +
             '<td><textarea spellcheck="false" class="scriptTextarea monospace" name="custom_form_action_form_table[' + newId + '][script]"></textarea></td>' +
+            '<td><input type="checkbox" name="custom_form_action_form_table[' + newId + '][prevent]"/></td>' +
             '<td><a href="#" class="remove-form-row">Usuń</a></td>' +
             '</tr>';
     }
@@ -43,13 +45,22 @@ jQuery(document).ready(($) => {
     // integrations
     Object.values(formTable).forEach((integration) => {
         const formId = integration.form_id;
-        const formObject = $('#' + formId);
+        const formContainerObject = $('#' + formId);
+        let formObject = null;
 
-        // Sprawdź, czy formularz istnieje na stronie
+        if (formContainerObject.is('form')) {
+            formObject = formContainerObject
+        } else {
+            formObject = formContainerObject.find('form');
+        }
+
+        // Check is formObject correct
         if (formObject.length) {
-            // prevent default actions on form
-            formObject.removeAttr('action')
-            formObject.removeAttr('method')
+            // prevent default actions on target form
+            if (integration.prevent) {
+                formObject.removeAttr('action')
+                formObject.removeAttr('method')
+            }
 
             // inject response handler script
             const script = document.createElement('script')
@@ -59,21 +70,24 @@ jQuery(document).ready(($) => {
 
         formObject.on( "submit", (e) => {
             let requestData = {}
-
             try {
                 requestData = {
-                    'name': e.target.name.value,
-                    'surname': e.target.surname.value,
-                    'email': e.target.email.value,
-                    'source': 'wwww',
+                    'name': e.target[formNames.name].value,
+                    'surname': e.target[formNames.surname].value,
+                    'email': e.target[formNames.email].value,
+                    'source': e.target[formNames.source].value,
                     'sourceDetails': window.location.protocol + window.location.host,
                     'branch': integration.branch,
                     'callback': integration.callback,
-                    'phone': e.target.phone?.value ?? '',
-                    'message': e.target.message?.value ?? '',
+                    'phone': e.target[formNames.phone]?.value ?? '',
+                    'message': e.target[formNames.message]?.value ?? '',
                 }
             } catch (e) {
                 console.error(`Invalid input names on form ${formId}`, e);
+                return false;
+            }
+
+            if (!requestData.name || !requestData.surname || !requestData.source || !requestData.branch) {
                 return false;
             }
 
